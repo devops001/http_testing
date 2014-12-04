@@ -1,0 +1,111 @@
+<!doctype html>
+  <head>
+    <title>http testing</title>
+    <meta charset="UTF-8"/>
+    <style>
+     div { border: 1px solid black; padding: 10px; }
+    </style>
+  </head>
+  <body>
+    <table>
+      <tr>
+        <td>URL:</td>
+        <td><input id="url" type="text" name="url" size="100" value="./login_handler.php"></td>
+      </tr>
+      <tr>
+        <td>Params:</td>
+        <td><input id="params" type="text" name="params" size="100" value="email=one%40two.com&password=three"></td>
+      </tr>
+      <tr>
+        <td>
+          <select id="method">
+            <option value="POST" selected="selected">POST</option>
+            <option value="GET">GET</option>
+          </select>
+        </td>
+        <td><input id="submit" type="submit" value="Send Request"></td>
+      </tr>
+    </table>
+
+    <p>header:</p>
+    <div id="header"></div>
+
+    <p>log:</p>
+    <div id="log"></div>
+
+    <p>output:</p>
+    <div id="output"></div>
+
+  </body>
+  <script type="text/javascript">
+    function createCORSRequest(method, url) {
+      var xhr = new XMLHttpRequest();
+      if ("withCredentials" in xhr) {                         //<- not ie
+        xhr.open(method, url, true);
+      } else if (typeof XDomainRequest != "undefined") {      //<- is ie
+        xhr = new XDomainRequest();
+        xhr.open(method, url);
+      } else {                                                //<- not supported
+        xhr = null;
+      }
+      return xhr;
+    }
+    
+    function log(msg) {
+      document.getElementById("log").innerHTML += msg +"<br/>";
+    }
+
+    function puts(msg) {
+      document.getElementById("output").innerHTML += msg +"<br/>";
+    }
+
+    function clearResults() {
+      document.getElementById("log").innerHTML    = "";
+      document.getElementById("header").innerHTML = "";
+      document.getElementById("output").innerHTML = "";
+    }
+
+    function displayHeader(handler) {
+      var fields = ["Connection","Content-Encoding","Content-Length","Content-Type","Date","Keep-Alive",
+                    "Server","Vary","X-Powered-By"];
+      var rows   = "";
+      for (var i=0; i<fields.length; i++) {
+        rows += "<tr><td>"+ fields[i] +"</td><td>"+ handler.getResponseHeader(fields[i]) +"</td></tr>";
+      }
+      var table  =  "<table>"+ rows +"</table>";
+      document.getElementById("header").innerHTML = table;
+    }
+
+    document.getElementById("submit").onclick = function() {
+      var url      = document.getElementById("url").value;
+      var methElem = document.getElementById("method");
+      var method   = methElem.options[methElem.selectedIndex].text;
+      var params   = document.getElementById("params").value;
+
+      clearResults();
+      log("url:    "+ url);
+      log("method: "+ method);
+      log("params: "+ params);
+
+      var http = createCORSRequest(method, url);
+      http.open(method, url, true);
+      http.setRequestHeader("Content-type",   "application/x-www-form-urlencoded");
+      http.setRequestHeader("Content-length", params.length);
+      http.setRequestHeader("Connection",     "close");
+
+      http.onload = function() {
+        displayHeader(this);
+        log("it worked:");
+        puts(http.responseText);
+      }
+
+      http.onerror = function() {
+        displayHeader(this);
+        log("it didn't work.");
+        puts(http.responseText);
+      }
+
+      http.send(params);
+    };
+  </script>
+</html>
